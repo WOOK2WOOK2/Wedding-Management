@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>스마트 축의금 정리 & 공유 프로그램</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Pretendard', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-rose-500 text-white p-2 rounded-xl shadow-md shadow-rose-200">
+                    <i data-lucide="gift" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-slate-900 tracking-tight">웨딩북 : 축의금 정산</h1>
+                    <p class="text-xs text-slate-500">안전하고 편리한 하객 방명록 및 축의금 관리</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2">
+                <button onclick="openShareModal()" class="inline-flex items-center space-x-1.5 bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-2 rounded-xl text-sm font-medium shadow-md shadow-indigo-100 transition-all active:scale-95">
+                    <i data-lucide="share-2" class="w-4 h-4"></i>
+                    <span>링크 공유 및 배포</span>
+                </button>
+                <button onclick="openModal()" class="inline-flex items-center space-x-1 bg-rose-500 hover:bg-rose-600 text-white px-4 py-2 rounded-xl text-sm font-medium shadow-md shadow-rose-200 transition-all active:scale-95">
+                    <i data-lucide="user-plus" class="w-4 h-4"></i>
+                    <span>방문객 추가</span>
+                </button>
+                <button onclick="exportToCSV()" class="inline-flex items-center space-x-1 bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-sm font-medium shadow-md shadow-emerald-100 transition-all active:scale-95">
+                    <i data-lucide="download" class="w-4 h-4"></i>
+                    <span class="hidden sm:inline">CSV 내보내기</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full space-y-8">
+        
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <!-- Total Amount -->
+            <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex items-center space-x-4">
+                <div class="p-3.5 bg-rose-50 text-rose-600 rounded-2xl">
+                    <i data-lucide="coins" class="w-7 h-7"></i>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">총 축의금 금액</p>
+                    <h3 id="stat-total-amount" class="text-2xl font-extrabold text-slate-900 mt-0.5">0원</h3>
+                </div>
+            </div>
+            <!-- Total Visitors -->
+            <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex items-center space-x-4">
+                <div class="p-3.5 bg-indigo-50 text-indigo-600 rounded-2xl">
+                    <i data-lucide="users" class="w-7 h-7"></i>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">총 하객 인원</p>
+                    <h3 id="stat-total-count" class="text-2xl font-extrabold text-slate-900 mt-0.5">0명</h3>
+                </div>
+            </div>
+            <!-- Total Meal Tickets -->
+            <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex items-center space-x-4">
+                <div class="p-3.5 bg-amber-50 text-amber-600 rounded-2xl">
+                    <i data-lucide="utensils" class="w-7 h-7"></i>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">총 식권 배부 수</p>
+                    <h3 id="stat-total-meals" class="text-2xl font-extrabold text-slate-900 mt-0.5">0매</h3>
+                </div>
+            </div>
+            <!-- Average Amount -->
+            <div class="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm flex items-center space-x-4">
+                <div class="p-3.5 bg-emerald-50 text-emerald-600 rounded-2xl">
+                    <i data-lucide="trending-up" class="w-7 h-7"></i>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">평균 축의금</p>
+                    <h3 id="stat-avg-amount" class="text-2xl font-extrabold text-slate-900 mt-0.5">0원</h3>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls & Filters Section -->
+        <div class="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="flex flex-wrap items-center gap-3">
+                <!-- Search Box -->
+                <div class="relative flex-grow sm:flex-grow-0 sm:w-72">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
+                        <i data-lucide="search" class="w-4 h-4"></i>
+                    </span>
+                    <input type="text" id="search-input" oninput="filterAndRender()" placeholder="이름 또는 메모 검색..." class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:bg-white transition-all">
+                </div>
+                <!-- Category Filter -->
+                <select id="category-filter" onchange="filterAndRender()" class="px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:bg-white transition-all">
+                    <option value="all">모든 소속 (전체)</option>
+                    <option value="신랑측 가족">신랑측 가족</option>
+                    <option value="신부측 가족">신부측 가족</option>
+                    <option value="신랑측 친구">신랑측 친구</option>
+                    <option value="신부측 친구">신부측 친구</option>
+                    <option value="신랑측 직장">신랑측 직장</option>
+                    <option value="신부측 직장">신부측 직장</option>
+                    <option value="기타">기타</option>
+                </select>
+            </div>
+            
+            <div class="flex items-center space-x-3">
+                <!-- Sort Options -->
+                <select id="sort-select" onchange="filterAndRender()" class="px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:bg-white transition-all">
+                    <option value="latest">최신순 (방명록 번호순)</option>
+                    <option value="amount-desc">금액 높은순</option>
+                    <option value="amount-asc">금액 낮은순</option>
+                    <option value="name">이름순</option>
+                </select>
+                <!-- Reset Data Button -->
+                <button onclick="confirmResetData()" class="p-2.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all" title="데이터 전체 초기화">
+                    <i data-lucide="trash-2" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Data Table Card -->
+        <div class="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50/75 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                            <th class="py-3.5 px-4">방명록 번호</th>
+                            <th class="py-3.5 px-4">하객 이름</th>
+                            <th class="py-3.5 px-4">소속 / 관계</th>
+                            <th class="py-3.5 px-4 text-right">금액</th>
+                            <th class="py-3.5 px-4 text-center">식권 수</th>
+                            <th class="py-3.5 px-4 text-center">방명록 작성</th>
+                            <th class="py-3.5 px-4">메모</th>
+                            <th class="py-3.5 px-4 text-center">관리</th>
+                        </tr>
+                    </thead>
+                    <tbody id="guest-table-body" class="divide-y divide-slate-100 text-sm">
+                        <!-- Dynamic Records populated via JS -->
+                    </tbody>
+                </table>
+            </div>
+            <!-- Empty State -->
+            <div id="empty-state" class="hidden py-16 text-center">
+                <div class="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <i data-lucide="folder-open" class="w-8 h-8"></i>
+                </div>
+                <p class="text-slate-600 font-medium">등록된 하객 정보가 없습니다.</p>
+                <p class="text-xs text-slate-400 mt-1">우측 상단 '방문객 추가' 버튼을 눌러 등록해주세요.</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add/Edit Modal -->
+    <div id="guest-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm hidden">
+        <div class="bg-white rounded-3xl shadow-xl w-full max-w-lg mx-4 overflow-hidden border border-slate-100 transform transition-all">
+            <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                <h3 id="modal-title" class="text-lg font-bold text-slate-900">새 하객 정보 입력</h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-xl hover:bg-slate-100 transition-all">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <form id="guest-form" onsubmit="handleFormSubmit(event)" class="p-6 space-y-4">
+                <input type="hidden" id="edit-id">
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">방명록 번호</label>
+                        <input type="number" id="guest-no" required min="1" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:bg-white transition-all" placeholder="예: 1">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">하객 이름</label>
+                        <input type="text" id="guest-name" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:bg-white transition-all" placeholder="예: 홍길동">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">소속 / 관계</label>
+                        <select id="guest-category" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:bg-white transition-all">
+                            <option value="신랑측 가족">신랑측 가족</option>
+                            <option value="신부측 가족">신부측 가족</option>
+                            <option value="신랑측 친구">신랑측 친구</option>
+                            <option value="신부측 친구">신부측 친구</option>
+                            <option value="신랑측 직장">신랑측 직장</option>
+                            <option value="신부측 직장">신부측 직장</option>
+                            <option value="기타">기타</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">축의금 금액 (원)</label>
+                        <input type="number" id="guest-amount" required min="0" step="1000" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:bg-white transition-all" placeholder="예: 50000">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">식권 수 (장)</label>
+                        <input type="number" id="guest-meals" required min="0" value="1" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:bg-white transition-all">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">방명록 작성 여부</label>
+                        <div class="flex items-center h-10 px-3 bg-slate-50 border border-slate-200 rounded-xl">
+                            <label class="inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="guest-delivered" class="sr-only peer" checked>
+                                <div class="relative w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-rose-500"></div>
+                                <span class="ms-2 text-xs font-medium text-slate-700">작성 완료</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">메모</label>
+                    <input type="text" id="guest-memo" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 focus:bg-white transition-all" placeholder="특이사항 또는 전달사항 입력">
+                </div>
+
+                <div class="pt-3 flex items-center justify-end space-x-3">
+                    <button type="button" onclick="closeModal()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-medium rounded-xl text-sm transition-all">취소</button>
+                    <button type="submit" class="px-5 py-2.5 bg-rose-500 hover:bg-rose-600 text-white font-medium rounded-xl text-sm shadow-md shadow-rose-200 transition-all">저장하기</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Share & Deployment Guide Modal -->
+    <div id="share-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm hidden">
+        <div class="bg-white rounded-3xl shadow-xl w-full max-w-xl mx-4 overflow-hidden border border-slate-100 transform transition-all">
+            <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                <div class="flex items-center space-x-2">
+                    <div class="p-2 bg-indigo-50 text-indigo-600 rounded-xl">
+                        <i data-lucide="share-2" class="w-5 h-5"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-900">웹 링크 공유 및 배포 방법</h3>
+                </div>
+                <button onclick="closeShareModal()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-xl hover:bg-slate-100 transition-all">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
+                <div>
+                    <h4 class="text-sm font-bold text-slate-800 mb-2 flex items-center space-x-1.5">
+                        <span class="w-6 h-6 rounded-full bg-rose-100 text-rose-600 inline-flex items-center justify-center text-xs font-bold">1</span>
+                        <span>파일 다운로드 후 공유 (가장 간편한 방법)</span>
+                    </h4>
+                    <p class="text-xs text-slate-500 pl-7 leading-relaxed">
+                        현재 페이지를 단일 HTML 파일로 저장하여 카카오톡이나 이메일로 전송하면, 상대방이 컴퓨터나 스마트폰에서 더블 클릭하여 웹브라우저로 바로 열 수 있습니다.
+                    </p>
+                    <div class="mt-3 pl-7">
+                        <button onclick="downloadHtmlFile()" class="inline-flex items-center space-x-1.5 bg-slate-900 hover:bg-slate-800 text-white px-4 py-2 rounded-xl text-xs font-medium shadow-sm transition-all">
+                            <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                            <span>이 프로그램 HTML 파일 저장하기</span>
+                        </button>
+                    </div>
+                </div>
+
+                <hr class="border-slate-100">
+
+                <div>
+                    <h4 class="text-sm font-bold text-slate-800 mb-2 flex items-center space-x-1.5">
+                        <span class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 inline-flex items-center justify-center text-xs font-bold">2</span>
+                        <span>무료 웹 호스팅으로 영구 인터넷 링크 만들기 (Vercel / Netlify / GitHub Pages)</span>
+                    </h4>
+                    <p class="text-xs text-slate-500 pl-7 leading-relaxed">
+                        실제 인터넷 주소(<code class="bg-slate-100 px-1 py-0.5 rounded text-indigo-600 font-mono">https://my-wedding.vercel.app</code> 등)를 만들어 스마트폰에서도 언제 어디서나 접속하게 하려면 아래 무료 서비스를 활용할 수 있습니다.
+                    </p>
+                    <ul class="mt-3 pl-7 space-y-2 text-xs text-slate-600">
+                        <li class="flex items-start space-x-2">
+                            <span class="text-indigo-500 font-bold">•</span>
+                            <span><strong>Vercel (추천):</strong> <a href="https://vercel.com" target="_blank" class="text-indigo-600 underline font-medium">vercel.com</a>에 무료 가입 후 위에서 다운로드한 HTML 파일을 드래그 앤 드롭하면 1초 만에 공인 URL 링크가 생성됩니다.</span>
+                        </li>
+                        <li class="flex items-start space-x-2">
+                            <span class="text-indigo-500 font-bold">•</span>
+                            <span><strong>Netlify Drop:</strong> <a href="https://drop.netlify.com" target="_blank" class="text-indigo-600 underline font-medium">drop.netlify.com</a>에 접속하여 HTML 파일을 올리면 즉시 공유 링크가 발급됩니다.</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end">
+                <button onclick="closeShareModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 font-medium rounded-xl text-sm transition-all">확인</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // Data storage key
+        const STORAGE_KEY = 'wedding_money_records_v1';
+        
+        // Initial sample data if local storage is empty
+        let records = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [
+            { id: '1', no: 1, name: '김철수', category: '신랑측 친구', amount: 50000, meals: 1, delivered: true, memo: '대학 동기' },
+            { id: '2', no: 2, name: '이영희', category: '신부측 친구', amount: 100000, meals: 2, delivered: true, memo: '고교 동창' },
+            { id: '3', no: 3, name: '박민수', category: '신랑측 직장', amount: 50000, meals: 1, delivered: false, memo: '팀장님 축하' }
+        ];
+
+        // Initialize Lucide icons on load
+        window.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            filterAndRender();
+        });
+
+        // Save records to local storage
+        function saveToLocalStorage() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+        }
+
+        // Format currency helper
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('ko-KR').format(amount) + '원';
+        }
+
+        // Open Modal (Add mode or Edit mode)
+        function openModal(id = null) {
+            const modal = document.getElementById('guest-modal');
+            const title = document.getElementById('modal-title');
+            const form = document.getElementById('guest-form');
+            
+            form.reset();
+            document.getElementById('edit-id').value = '';
+            
+            if (id) {
+                title.textContent = '하객 정보 수정';
+                const record = records.find(r => r.id === id);
+                if (record) {
+                    document.getElementById('edit-id').value = record.id;
+                    document.getElementById('guest-no').value = record.no;
+                    document.getElementById('guest-name').value = record.name;
+                    document.getElementById('guest-category').value = record.category;
+                    document.getElementById('guest-amount').value = record.amount;
+                    document.getElementById('guest-meals').value = record.meals;
+                    document.getElementById('guest-delivered').checked = record.delivered;
+                    document.getElementById('guest-memo').value = record.memo || '';
+                }
+            } else {
+                title.textContent = '새 하객 정보 입력';
+                const maxNo = records.length > 0 ? Math.max(...records.map(r => Number(r.no) || 0)) : 0;
+                document.getElementById('guest-no').value = maxNo + 1;
+            }
+            
+            modal.classList.remove('hidden');
+        }
+
+        // Close Modal
+        function closeModal() {
+            document.getElementById('guest-modal').classList.add('hidden');
+        }
+
+        // Open & Close Share Modal
+        function openShareModal() {
+            document.getElementById('share-modal').classList.remove('hidden');
+        }
+        function closeShareModal() {
+            document.getElementById('share-modal').classList.add('hidden');
+        }
+
+        // Download HTML file for offline sharing
+        function downloadHtmlFile() {
+            const htmlContent = document.documentElement.outerHTML;
+            const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('href', url);
+            a.setAttribute('download', 'wedding_manager.html');
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        // Handle Form Submit (Add or Update)
+        function handleFormSubmit(event) {
+            event.preventDefault();
+            
+            const editId = document.getElementById('edit-id').value;
+            const no = parseInt(document.getElementById('guest-no').value);
+            const name = document.getElementById('guest-name').value.trim();
+            const category = document.getElementById('guest-category').value;
+            const amount = parseInt(document.getElementById('guest-amount').value);
+            const meals = parseInt(document.getElementById('guest-meals').value);
+            const delivered = document.getElementById('guest-delivered').checked;
+            const memo = document.getElementById('guest-memo').value.trim();
+
+            if (editId) {
+                records = records.map(r => r.id === editId ? { ...r, no, name, category, amount, meals, delivered, memo } : r);
+            } else {
+                const newRecord = {
+                    id: Date.now().toString(),
+                    no,
+                    name,
+                    category,
+                    amount,
+                    meals,
+                    delivered,
+                    memo
+                };
+                records.push(newRecord);
+            }
+
+            saveToLocalStorage();
+            closeModal();
+            filterAndRender();
+        }
+
+        // Delete single record
+        function deleteRecord(id) {
+            if (confirm('해당 하객 정보를 삭제하시겠습니까?')) {
+                records = records.filter(r => r.id !== id);
+                saveToLocalStorage();
+                filterAndRender();
+            }
+        }
+
+        // Reset all records data
+        function confirmResetData() {
+            if (confirm('모든 데이터가 초기화됩니다. 정말 삭제하시겠습니까?')) {
+                records = [];
+                saveToLocalStorage();
+                filterAndRender();
+            }
+        }
+
+        // Filter and Sort Handler, updates DOM
+        function filterAndRender() {
+            const searchQuery = document.getElementById('search-input').value.toLowerCase();
+            const categoryFilter = document.getElementById('category-filter').value;
+            const sortSelect = document.getElementById('sort-select').value;
+
+            let filtered = records.filter(r => {
+                const matchesSearch = r.name.toLowerCase().includes(searchQuery) || (r.memo && r.memo.toLowerCase().includes(searchQuery));
+                const matchesCategory = categoryFilter === 'all' || r.category === categoryFilter;
+                return matchesSearch && matchesCategory;
+            });
+
+            filtered.sort((a, b) => {
+                if (sortSelect === 'latest') {
+                    return b.no - a.no;
+                } else if (sortSelect === 'amount-desc') {
+                    return b.amount - a.amount;
+                } else if (sortSelect === 'amount-asc') {
+                    return a.amount - b.amount;
+                } else if (sortSelect === 'name') {
+                    return a.name.localeCompare(b.name);
+                }
+                return 0;
+            });
+
+            updateStats();
+
+            const tbody = document.getElementById('guest-table-body');
+            const emptyState = document.getElementById('empty-state');
+            
+            tbody.innerHTML = '';
+
+            if (filtered.length === 0) {
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+                filtered.forEach(r => {
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-slate-50/75 transition-colors border-b border-slate-100';
+                    
+                    let badgeColor = 'bg-slate-100 text-slate-700';
+                    if (r.category.includes('가족')) badgeColor = 'bg-rose-50 text-rose-700 border border-rose-100';
+                    else if (r.category.includes('친구')) badgeColor = 'bg-indigo-50 text-indigo-700 border border-indigo-100';
+                    else if (r.category.includes('직장')) badgeColor = 'bg-emerald-50 text-emerald-700 border border-emerald-100';
+
+                    tr.innerHTML = `
+                        <td class="py-3.5 px-4 font-semibold text-slate-700">#${r.no}</td>
+                        <td class="py-3.5 px-4 font-medium text-slate-900">${r.name}</td>
+                        <td class="py-3.5 px-4"><span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${badgeColor}">${r.category}</span></td>
+                        <td class="py-3.5 px-4 text-right font-bold text-slate-900">${formatCurrency(r.amount)}</td>
+                        <td class="py-3.5 px-4 text-center text-slate-600">${r.meals}매</td>
+                        <td class="py-3.5 px-4 text-center">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium ${r.delivered ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}">
+                                ${r.delivered ? '작성완료' : '미작성'}
+                            </span>
+                        </td>
+                        <td class="py-3.5 px-4 text-slate-500 text-xs truncate max-w-xs">${r.memo || '-'}</td>
+                        <td class="py-3.5 px-4 text-center">
+                            <div class="flex items-center justify-center space-x-1">
+                                <button onclick="openModal('${r.id}')" class="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all" title="수정">
+                                    <i data-lucide="edit-3" class="w-4 h-4"></i>
+                                </button>
+                                <button onclick="deleteRecord('${r.id}')" class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all" title="삭제">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }
+
+            lucide.createIcons();
+        }
+
+        // Update statistics summary header
+        function updateStats() {
+            const totalCount = records.length;
+            const totalAmount = records.reduce((acc, curr) => acc + (curr.amount || 0), 0);
+            const totalMeals = records.reduce((acc, curr) => acc + (curr.meals || 0), 0);
+            const avgAmount = totalCount > 0 ? Math.round(totalAmount / totalCount) : 0;
+
+            document.getElementById('stat-total-amount').textContent = formatCurrency(totalAmount);
+            document.getElementById('stat-total-count').textContent = totalCount + '명';
+            document.getElementById('stat-total-meals').textContent = totalMeals + '매';
+            document.getElementById('stat-avg-amount').textContent = formatCurrency(avgAmount);
+        }
+
+        // Export data to CSV file with UTF-8 BOM for Excel compatibility
+        function exportToCSV() {
+            if (records.length === 0) {
+                alert('내보낼 데이터가 없습니다.');
+                return;
+            }
+
+            let csvContent = '\uFEFF';
+            csvContent += '방명록번호,하객이름,소속,금액,식권수,방명록작성여부,메모\n';
+
+            records.forEach(r => {
+                const row = [
+                    r.no,
+                    `"${r.name}"`,
+                    `"${r.category}"`,
+                    r.amount,
+                    r.meals,
+                    r.delivered ? '완료' : '미작성',
+                    `"${(r.memo || '').replace(/"/g, '""')}"`
+                ];
+                csvContent += row.join(',') + '\n';
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.setAttribute('href', url);
+            a.setAttribute('download', `축의금정산목록_${new Date().toISOString().slice(0, 10)}.csv`);
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+    </script>
+</body>
+</html>
