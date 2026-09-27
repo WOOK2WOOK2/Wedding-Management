@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>송은&김태욱 축의금 관리 시스템</title>
+  
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- FontAwesome Icons CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    :root {
+      --primary: #4a6fa5;
+      --primary-hover: #3b5984;
+      --groom-color: #3b82f6;
+      --groom-bg: #eff6ff;
+      --groom-border: #bfdbfe;
+      --bride-color: #ec4899;
+      --bride-bg: #fdf2f8;
+      --bride-border: #fbcfe8;
+      --dark: #1e293b;
+      --light-gray: #f8fafc;
+      --border: #e2e8f0;
+      --card-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    body {
+      background-color: #f1f5f9;
+      color: var(--dark);
+      padding-bottom: 40px;
+    }
+
+    header {
+      background: white;
+      border-bottom: 1px solid var(--border);
+      padding: 1.25rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .header-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header-title i {
+      color: var(--bride-color);
+      font-size: 1.5rem;
+    }
+
+    .header-title h1 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--dark);
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn {
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      border: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-success { background: #10b981; color: white; }
+    .btn-success:hover { background: #059669; }
+    .btn-secondary { background: #e2e8f0; color: #475569; }
+    .btn-secondary:hover { background: #cbd5e1; }
+    .btn-danger { background: #ef4444; color: white; }
+    .btn-danger:hover { background: #dc2626; }
+    .btn-sm { padding: 0.25rem 0.5rem; font-size: 0.8rem; }
+
+    .container {
+      max-width: 1280px;
+      margin: 1.5rem auto;
+      padding: 0 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    /* 통계 및 그래프 섹션 */
+    .top-dashboard {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 1.5rem;
+    }
+
+    @media (max-width: 900px) {
+      .top-dashboard {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .dashboard-card {
+      background: white;
+      border-radius: 10px;
+      padding: 1.25rem;
+      box-shadow: var(--card-shadow);
+      border: 1px solid var(--border);
+    }
+
+    .card-header {
+      font-weight: 700;
+      font-size: 1.05rem;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: #334155;
+    }
+
+    /* 요약 카드 grid */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .summary-box {
+      padding: 1rem;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .summary-box.total { background: #f8fafc; border: 1px solid #e2e8f0; }
+    .summary-box.groom { background: var(--groom-bg); border: 1px solid var(--groom-border); }
+    .summary-box.bride { background: var(--bride-bg); border: 1px solid var(--bride-border); }
+
+    .summary-label { font-size: 0.85rem; font-weight: 600; color: #64748b; }
+    .summary-box.groom .summary-label { color: #1d4ed8; }
+    .summary-box.bride .summary-label { color: #be185d; }
+
+    .summary-val { font-size: 1.05rem; font-weight: 700; color: #0f172a; }
+    .summary-sub { font-size: 0.75rem; color: #64748b; }
+
+    .chart-container {
+      position: relative;
+      height: 220px;
+      width: 100%;
+    }
+
+    /* 입력 폼 및 테이블 영역 */
+    .main-grid {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 1.5rem;
+    }
+
+    @media (max-width: 1024px) {
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .form-group {
+      margin-bottom: 0.85rem;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.825rem;
+      font-weight: 600;
+      margin-bottom: 0.35rem;
+      color: #475569;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 0.5rem 0.75rem;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .form-control:focus {
+      border-color: var(--primary);
+    }
+
+    .radio-group {
+      display: flex;
+      gap: 10px;
+    }
+
+    .radio-label {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      padding: 0.5rem;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .radio-label input { display: none; }
+
+    .radio-label.active-groom {
+      background: var(--groom-bg);
+      border-color: var(--groom-color);
+      color: var(--groom-color);
+    }
+
+    .radio-label.active-bride {
+      background: var(--bride-bg);
+      border-color: var(--bride-color);
+      color: var(--bride-color);
+    }
+
+    /* 필터 및 컨트롤 바 */
+    .control-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .search-filter-box {
+      display: flex;
+      gap: 8px;
+      flex: 1;
+      min-width: 280px;
+    }
+
+    /* 테이블 디자인 */
+    .table-container {
+      background: white;
+      border-radius: 10px;
+      box-shadow: var(--card-shadow);
+      border: 1px solid var(--border);
+      overflow-x: auto;
+    }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.875rem;
+    }
+
+    .data-table th {
+      background: #f8fafc;
+      padding: 0.75rem 0.85rem;
+      font-weight: 600;
+      color: #475569;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    .data-table td {
+      padding: 0.65rem 0.85rem;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+
+    .data-table tbody tr:hover {
+      background-color: #f1f5f9;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .badge-groom { background: var(--groom-bg); color: var(--groom-color); border: 1px solid var(--groom-border); }
+    .badge-bride { background: var(--bride-bg); color: var(--bride-color); border: 1px solid var(--bride-border); }
+
+    /* 모달 레이아웃 */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .modal-card {
+      background: white;
+      border-radius: 12px;
+      padding: 1.5rem;
+      width: 90%;
+      max-width: 600px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+    }
+
+    @media (max-width: 700px) {
+      header {
+        padding: 1rem;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      .header-title h1 {
+        font-size: 1.1rem;
+      }
+
+      .header-actions {
+        width: 100%;
+      }
+
+      .header-actions .btn {
+        flex: 1;
+        justify-content: center;
+      }
+
+      .summary-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .search-filter-box {
+        width: 100%;
+        min-width: 0;
+        flex-direction: column;
+      }
+
+      .search-filter-box .form-control,
+      #sort-order {
+        width: 100% !important;
+      }
+
+      .control-bar {
+        align-items: stretch;
+      }
+
+      .data-table {
+        min-width: 900px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <header aria-label="축의금 관리 시스템 헤더">
+    <div class="header-title">
+      <i class="fa-solid fa-heart"></i>
+      <h1>송은&김태욱 축의금 관리 시스템</h1>
+    </div>
+    <div class="header-actions">
+      <button type="button" class="btn btn-secondary" onclick="exportToCSV()"><i class="fa-solid fa-file-excel"></i> 엑셀(CSV) 저장</button>
+      <button type="button" class="btn btn-primary" onclick="openShareModal()"><i class="fa-solid fa-share-nodes"></i> 공유 / 웹 배포</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="top-dashboard">
+      <!-- 요약 정보 카드 -->
+      <div class="dashboard-card" style="display: flex; flex-direction: column; justify-content: space-between;">
+        <div class="card-header">
+          <span><i class="fa-solid fa-calculator" style="color:var(--primary)"></i> 전체 축의금 요약</span>
+        </div>
+
+        <div class="summary-grid">
+          <div class="summary-box total">
+            <span class="summary-label">전체 총액</span>
+            <span class="summary-val" id="stat-total-amount">0만원</span>
+            <span class="summary-sub" id="stat-total-count">총 0명</span>
+          </div>
+          <div class="summary-box groom">
+            <span class="summary-label">신랑 측</span>
+            <span class="summary-val" id="stat-groom-amount">0만원</span>
+            <span class="summary-sub" id="stat-groom-count">0명</span>
+          </div>
+          <div class="summary-box bride">
+            <span class="summary-label">신부 측</span>
+            <span class="summary-val" id="stat-bride-amount">0만원</span>
+            <span class="summary-sub" id="stat-bride-count">0명</span>
+          </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:0.6rem;">
+          <div style="background: #f8fafc; padding: 0.75rem; border-radius: 6px; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size:0.85rem; font-weight:600; color:#475569;"><i class="fa-solid fa-utensils"></i> 총 지급 식권 수</span>
+            <span style="font-size:1.1rem; font-weight:700; color:var(--primary)" id="stat-meal-count">0장</span>
+          </div>
+
+          <div style="background: #f8fafc; padding: 0.75rem; border-radius: 6px; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size:0.85rem; font-weight:600; color:#475569;"><i class="fa-solid fa-receipt"></i> 정산(지출) 총액</span>
+            <span style="font-size:1.1rem; font-weight:700;" id="stat-settlement-amount">0만원</span>
+          </div>
+
+          <div style="background: #eef2ff; padding: 0.75rem; border-radius: 6px; border: 1px solid #c7d2fe; display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size:0.85rem; font-weight:700; color:#334155;"><i class="fa-solid fa-sack-dollar"></i> 최종 순수익</span>
+            <span style="font-size:1.15rem; font-weight:800; color:var(--primary);" id="stat-net-amount">0만원</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 통계 그래프 -->
+      <div class="dashboard-card">
+        <div class="card-header">
+          <span><i class="fa-solid fa-chart-bar" style="color:var(--primary)"></i> 신랑 VS 신부 축의금 현황</span>
+        </div>
+        <div class="chart-container">
+          <canvas id="sideBySideChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="main-grid">
+      <!-- 입력 폼 -->
+      <div class="dashboard-card" style="height: fit-content;">
+        <div class="card-header">
+          <span id="form-title"><i class="fa-solid fa-user-plus"></i> 축의금 내역 입력</span>
+          <button id="btn-cancel-edit" class="btn btn-secondary btn-sm" style="display:none;" onclick="resetForm()">취소</button>
+        </div>
+
+        <form id="guest-form" onsubmit="handleFormSubmit(event)">
+          <input type="hidden" id="edit-id">
+
+          <div class="form-group">
+            <label>구분 (신랑/신부)</label>
+            <div class="radio-group">
+              <label class="radio-label groom-radio active-groom" id="label-groom">
+                <input type="radio" name="side" value="신랑" checked onclick="toggleSideStyle('신랑')">
+                <span>신랑 측</span>
+              </label>
+              <label class="radio-label bride-radio" id="label-bride">
+                <input type="radio" name="side" value="신부" onclick="toggleSideStyle('신부')">
+                <span>신부 측</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="book-num">방명록(봉투) 번호</label>
+            <input type="number" id="book-num" class="form-control" placeholder="예: 1" min="1" step="1" required>
+          </div>
+
+          <div class="form-group">
+            <label for="guest-name">이름</label>
+            <input type="text" id="guest-name" class="form-control" placeholder="성함 입력" required>
+          </div>
+
+          <div class="form-group">
+            <label for="affiliation">소속/관계</label>
+            <select id="affiliation" class="form-control">
+              <!-- JavaScript로 옵션 동적 생성 (필터 드롭박스와 동일 목록 공유) -->
+            </select>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 8px;">
+            <div class="form-group">
+              <label for="amount">축의 금액 (만원)</label>
+              <input type="number" id="amount" class="form-control" placeholder="10" min="0" step="1" required>
+            </div>
+            <div class="form-group">
+              <label for="meal-tickets">식권 수량</label>
+              <input type="number" id="meal-tickets" class="form-control" value="1" min="0" step="1">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="notes">메모</label>
+            <input type="text" id="notes" class="form-control" placeholder="참고사항 (예: 화환 전달 등)">
+          </div>
+
+          <button type="submit" id="btn-submit" class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 0.5rem; padding: 0.75rem;">
+            <i class="fa-solid fa-plus"></i> 등록하기
+          </button>
+        </form>
+      </div>
+
+      <!-- 리스트 및 필터 컨트롤 -->
+      <div>
+        <div class="control-bar">
+          <div class="search-filter-box">
+            <input type="text" id="search-input" class="form-control" placeholder="이름, 소속/관계, 메모 검색..." oninput="renderData()">
+            <select id="filter-side" class="form-control" style="width: 110px;" onchange="renderData()">
+              <option value="ALL">전체 구분</option>
+              <option value="신랑">신랑 측</option>
+              <option value="신부">신부 측</option>
+            </select>
+            <select id="filter-affiliation" class="form-control" style="width: 140px;" onchange="renderData()">
+              <option value="ALL">전체 소속/관계</option>
+              <!-- JavaScript로 옵션 동적 생성 (입력폼 드롭박스와 동일 목록 공유) -->
+            </select>
+          </div>
+          <select id="sort-order" class="form-control" style="width: 130px;" onchange="renderData()">
+            <option value="bookNum-asc">봉투번호순</option>
+            <option value="amount-desc">금액 높은순</option>
+            <option value="amount-asc">금액 낮은순</option>
+            <option value="name-asc">이름순</option>
+          </select>
+        </div>
+
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th style="width: 70px;">구분</th>
+                <th style="width: 100px;">방명록(봉투)</th>
+                <th>이름</th>
+                <th>소속/관계</th>
+                <th>금액(만원)</th>
+                <th style="width: 60px;">식권</th>
+                <th>메모</th>
+                <th style="width: 90px; text-align: center;">관리</th>
+              </tr>
+            </thead>
+            <tbody id="guest-table-body">
+              <!-- JavaScript로 데이터 동적 바인딩 -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex; align-items:center; gap:8px; margin-top: 0.25rem;">
+      <i class="fa-solid fa-receipt" style="color:var(--primary); font-size:1.1rem;"></i>
+      <h2 style="font-size:1.15rem; font-weight:700; color:#334155;">결혼식 이후 정산/지출 내역</h2>
+    </div>
+
+    <div class="main-grid">
+      <!-- 정산 입력 폼 -->
+      <div class="dashboard-card" style="height: fit-content;">
+        <div class="card-header">
+          <span id="settlement-form-title"><i class="fa-solid fa-money-bill-transfer"></i> 정산/지출 내역 입력</span>
+          <button id="btn-settlement-cancel-edit" class="btn btn-secondary btn-sm" style="display:none;" onclick="resetSettlementForm()">취소</button>
+        </div>
+
+        <form id="settlement-form" onsubmit="handleSettlementSubmit(event)">
+          <input type="hidden" id="settlement-edit-id">
+
+          <div class="form-group">
+            <label for="settlement-item">항목</label>
+            <input type="text" id="settlement-item" class="form-control" placeholder="예: 답례품, 예식장 대관료, 스냅비 정산" required>
+          </div>
+
+          <div class="form-group">
+            <label for="settlement-amount">지출 금액 (만원)</label>
+            <input type="number" id="settlement-amount" class="form-control" placeholder="예: 30" min="0" step="1" required>
+            <div style="font-size:0.75rem; color:#94a3b8; margin-top:4px;">숫자만 입력하면 자동으로 차감(-) 처리되어 반영됩니다.</div>
+          </div>
+
+          <div class="form-group">
+            <label for="settlement-notes">메모</label>
+            <input type="text" id="settlement-notes" class="form-control" placeholder="참고사항">
+          </div>
+
+          <button type="submit" id="btn-settlement-submit" class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 0.5rem; padding: 0.75rem;">
+            <i class="fa-solid fa-plus"></i> 등록하기
+          </button>
+        </form>
+      </div>
+
+      <!-- 정산 내역 테이블 -->
+      <div>
+        <div class="table-container">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>항목</th>
+                <th style="width: 140px;">금액(만원)</th>
+                <th>메모</th>
+                <th style="width: 90px; text-align: center;">관리</th>
+              </tr>
+            </thead>
+            <tbody id="settlement-table-body">
+              <!-- JavaScript로 데이터 동적 바인딩 -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="share-modal">
+    <div class="modal-card">
+      <div class="card-header">
+        <span><i class="fa-solid fa-share-nodes"></i> 웹 배포 및 파일 공유 가이드</span>
+        <button class="btn btn-secondary btn-sm" onclick="closeShareModal()">닫기</button>
+      </div>
+      <p style="font-size:0.9rem; color:#475569; margin-bottom:1rem; line-height: 1.5;">
+        이 프로그램은 단일 HTML 파일로 구성되어 있습니다. 소스 파일을 직접 다운로드하거나 무료 웹 서비스를 사용하여 온라인 공유 링크를 만들 수 있습니다.
+      </p>
+
+      <div style="background: #f8fafc; padding: 1rem; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 1rem;">
+        <h4 style="font-size:0.95rem; margin-bottom:0.5rem; color:#1e293b;"><i class="fa-solid fa-file-arrow-down"></i> 1. 파일 형태로 내 컴퓨터에 저장하기</h4>
+        <p style="font-size:0.85rem; color:#64748b; margin-bottom:0.75rem;">현재 수정 및 완성된 시스템 전체 코드 그대로 <code>.html</code> 파일로 다운로드합니다.</p>
+        <button class="btn btn-primary btn-sm" onclick="downloadCurrentHTML()"><i class="fa-solid fa-download"></i> 이 프로그램 HTML 파일 저장하기</button>
+      </div>
+
+      <div style="background: #f8fafc; padding: 1rem; border-radius: 8px; border: 1px solid var(--border);">
+        <h4 style="font-size:0.95rem; margin-bottom:0.5rem; color:#1e293b;"><i class="fa-solid fa-globe"></i> 2. 나만의 무료 인터넷 링크(URL) 만들기</h4>
+        <ol style="font-size:0.85rem; color:#475569; padding-left:1.2rem; line-height:1.6;">
+          <li>위 버튼을 눌러 HTML 파일을 먼저 다운로드받습니다.</li>
+          <li>무료 호스팅 서비스 <a href="https://drop.netlify.com/" target="_blank" style="color:var(--primary); font-weight:600;">Netlify Drop</a> 페이지에 접속합니다.</li>
+          <li>다운로드 받은 HTML 파일을 화면에 <strong>드래그 앤 드롭</strong>합니다.</li>
+          <li>즉시 접속 가능한 <strong>전용 웹 URL</strong>이 바로 생성됩니다!</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = 'song_taewook_wedding_guests';
+    const SETTLEMENT_STORAGE_KEY = 'song_taewook_wedding_settlements';
+
+    // 소속/관계 공용 옵션 (입력폼, 필터 드롭박스가 동일 목록을 공유)
+    const AFFILIATION_OPTIONS = ['친척/가족', '직장', '학교/동창', '지인/모임', '기타'];
+
+    // 기본 예시 데이터 (금액 단위: 만원)
+    const DEFAULT_GUESTS = [
+      { id: '1', side: '신랑', bookNum: 1, name: '김철수', affiliation: '직장', amount: 15, mealTickets: 2, notes: '화환 전달 · 관계: 팀장' },
+      { id: '2', side: '신부', bookNum: 1, name: '이영희', affiliation: '학교/동창', amount: 10, mealTickets: 1, notes: '관계: 대학친구' },
+      { id: '3', side: '신랑', bookNum: 2, name: '박민수', affiliation: '친척/가족', amount: 50, mealTickets: 4, notes: '관계: 삼촌' },
+      { id: '4', side: '신부', bookNum: 2, name: '최지은', affiliation: '직장', amount: 10, mealTickets: 1, notes: '기프티콘 전달받음 · 관계: 동기' }
+    ];
+
+    function loadGuests() {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (!stored) return DEFAULT_GUESTS.map(g => ({ ...g }));
+        const parsed = JSON.parse(stored);
+        return Array.isArray(parsed) ? parsed : DEFAULT_GUESTS.map(g => ({ ...g }));
+      } catch (error) {
+        console.warn('저장된 데이터를 불러오지 못했습니다. 기본 데이터를 사용합니다.', error);
+        return DEFAULT_GUESTS.map(g => ({ ...g }));
+      }
+    }
+
+    // 결혼식 이후 지출 예시 데이터 (금액 단위: 만원, 지출 항목이므로 항상 음수로 저장)
+    const DEFAULT_SETTLEMENTS = [
+      { id: 's1', item: '답례품 구매', amount: -20, notes: '전통 답례떡 100세트' },
+      { id: 's2', item: '스냅 작가비 정산', amount: -15, notes: '잔금 지급' }
+    ];
+
+    function loadSettlements() {
+      try {
+        const stored = localStorage.getItem(SETTLEMENT_STORAGE_KEY);
+        if (!stored) return DEFAULT_SETTLEMENTS.map(s => ({ ...s }));
+        const parsed = JSON.parse(stored);
+        return Array.isArray(parsed) ? parsed : DEFAULT_SETTLEMENTS.map(s => ({ ...s }));
+      } catch (error) {
+        console.warn('저장된 정산 데이터를 불러오지 못했습니다. 기본 데이터를 사용합니다.', error);
+        return DEFAULT_SETTLEMENTS.map(s => ({ ...s }));
+      }
+    }
+
+    let guests = loadGuests();
+    let settlements = loadSettlements();
+
+    let chartInstance = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      populateAffiliationOptions();
+      initChart();
+      renderData();
+      renderSettlements();
+    });
+
+    // 소속/관계 드롭박스 옵션을 공용 목록에서 동적 생성 (입력폼 + 필터 통일)
+    function populateAffiliationOptions() {
+      const formSelect = document.getElementById('affiliation');
+      AFFILIATION_OPTIONS.forEach((opt, idx) => {
+        const option = document.createElement('option');
+        option.value = opt;
+        option.textContent = opt;
+        if (opt === '직장') option.selected = true;
+        formSelect.appendChild(option);
+      });
+
+      const filterSelect = document.getElementById('filter-affiliation');
+      AFFILIATION_OPTIONS.forEach(opt => {
+        const option = document.createElement('option');
+        option.value = opt;
+        option.textContent = opt;
+        filterSelect.appendChild(option);
+      });
+    }
+
+    // 신랑/신부 라디오 토글 스타일링
+    function toggleSideStyle(side) {
+      const groomLabel = document.getElementById('label-groom');
+      const brideLabel = document.getElementById('label-bride');
+
+      if (side === '신랑') {
+        groomLabel.classList.add('active-groom');
+        brideLabel.classList.remove('active-bride');
+      } else {
+        brideLabel.classList.add('active-bride');
+        groomLabel.classList.remove('active-groom');
+      }
+    }
+
+    // Chart.js 초기화
+    function initChart() {
+      const ctx = document.getElementById('sideBySideChart').getContext('2d');
+      chartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['총 축의금 (만원)'],
+          datasets: [
+            {
+              label: '신랑 측',
+              data: [0],
+              backgroundColor: '#3b82f6',
+              borderRadius: 6
+            },
+            {
+              label: '신부 측',
+              data: [0],
+              backgroundColor: '#ec4899',
+              borderRadius: 6
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'top' },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return context.dataset.label + ': ' + context.raw.toLocaleString() + '만원';
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: function(value) { return value.toLocaleString() + '만원'; }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // 데이터 바인딩 및 통계 동기화
+    function renderData() {
+      const search = document.getElementById('search-input').value.trim().toLowerCase();
+      const sideFilter = document.getElementById('filter-side').value;
+      const affFilter = document.getElementById('filter-affiliation').value;
+      const sortOrder = document.getElementById('sort-order').value;
+
+      let filtered = guests.filter(g => {
+        const matchSearch = g.name.toLowerCase().includes(search) || 
+                            g.affiliation.toLowerCase().includes(search) || 
+                            (g.notes && g.notes.toLowerCase().includes(search));
+        const matchSide = sideFilter === 'ALL' || g.side === sideFilter;
+        const matchAff = affFilter === 'ALL' || g.affiliation === affFilter;
+        return matchSearch && matchSide && matchAff;
+      });
+
+      filtered.sort((a, b) => {
+        if (sortOrder === 'bookNum-asc') return a.bookNum - b.bookNum;
+        if (sortOrder === 'amount-desc') return b.amount - a.amount;
+        if (sortOrder === 'amount-asc') return a.amount - b.amount;
+        if (sortOrder === 'name-asc') return a.name.localeCompare(b.name);
+        return 0;
+      });
+
+      const tbody = document.getElementById('guest-table-body');
+      tbody.innerHTML = '';
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; padding: 2rem; color: #94a3b8;">등록된 축의금 내역이 없습니다.</td></tr>`;
+      } else {
+        filtered.forEach(g => {
+          const sideClass = g.side === '신랑' ? 'badge-groom' : 'badge-bride';
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td><span class="badge ${sideClass}">${g.side}</span></td>
+            <td><strong>#${g.bookNum}</strong></td>
+            <td><strong>${escapeHtml(g.name)}</strong></td>
+            <td>${escapeHtml(g.affiliation)}</td>
+            <td style="font-weight:700;">${g.amount.toLocaleString()}만원</td>
+            <td>${g.mealTickets}장</td>
+            <td style="color:#64748b; font-size:0.8rem;">${escapeHtml(g.notes || '-')}</td>
+            <td style="text-align: center;">
+              <button class="btn btn-secondary btn-sm" onclick="editGuest('${g.id}')"><i class="fa-solid fa-pen"></i></button>
+              <button class="btn btn-danger btn-sm" onclick="deleteGuest('${g.id}')"><i class="fa-solid fa-trash"></i></button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+
+      updateStatistics();
+      saveToStorage();
+    }
+
+    // 통계 및 차트 업데이트
+    function updateStatistics() {
+      let totalAmt = 0;
+      let groomAmt = 0;
+      let brideAmt = 0;
+      let groomCount = 0;
+      let brideCount = 0;
+      let totalMeal = 0;
+
+      guests.forEach(g => {
+        totalAmt += g.amount;
+        totalMeal += Number(g.mealTickets || 0);
+
+        if (g.side === '신랑') {
+          groomAmt += g.amount;
+          groomCount++;
+        } else {
+          brideAmt += g.amount;
+          brideCount++;
+        }
+      });
+
+      document.getElementById('stat-total-amount').innerText = totalAmt.toLocaleString() + '만원';
+      document.getElementById('stat-total-count').innerText = `총 ${guests.length}명`;
+      document.getElementById('stat-groom-amount').innerText = groomAmt.toLocaleString() + '만원';
+      document.getElementById('stat-groom-count').innerText = `${groomCount}명`;
+      document.getElementById('stat-bride-amount').innerText = brideAmt.toLocaleString() + '만원';
+      document.getElementById('stat-bride-count').innerText = `${brideCount}명`;
+      document.getElementById('stat-meal-count').innerText = totalMeal + '장';
+
+      // 정산/지출 총액 및 최종 순수익 (지출은 음수이므로 자동으로 '-' 표기됨)
+      let settlementAmt = 0;
+      settlements.forEach(s => { settlementAmt += Number(s.amount || 0); });
+      const netAmt = totalAmt + settlementAmt;
+
+      const settlementEl = document.getElementById('stat-settlement-amount');
+      settlementEl.innerText = settlementAmt.toLocaleString() + '만원';
+      settlementEl.style.color = settlementAmt < 0 ? '#dc2626' : '#0f172a';
+
+      const netEl = document.getElementById('stat-net-amount');
+      netEl.innerText = netAmt.toLocaleString() + '만원';
+      netEl.style.color = netAmt < 0 ? '#dc2626' : 'var(--primary)';
+
+      if (chartInstance) {
+        chartInstance.data.datasets[0].data = [groomAmt];
+        chartInstance.data.datasets[1].data = [brideAmt];
+        chartInstance.update();
+      }
+    }
+
+    // 데이터 등록 및 수정
+    function handleFormSubmit(e) {
+      e.preventDefault();
+
+      const editId = document.getElementById('edit-id').value;
+      const side = document.querySelector('input[name="side"]:checked').value;
+      const bookNum = Number(document.getElementById('book-num').value);
+      const name = document.getElementById('guest-name').value.trim();
+      const affiliation = document.getElementById('affiliation').value;
+      const amount = Number(document.getElementById('amount').value);
+      const mealTickets = Number(document.getElementById('meal-tickets').value);
+      const notes = document.getElementById('notes').value.trim();
+
+      if (!Number.isInteger(bookNum) || bookNum < 1) {
+        alert('방명록(봉투) 번호는 1 이상의 정수로 입력해주세요.');
+        return;
+      }
+      const isDuplicateBookNum = guests.some(g => g.side === side && g.bookNum === bookNum && g.id !== editId);
+      if (isDuplicateBookNum) {
+        alert(`이미 등록된 방명록(봉투) 번호입니다. (${side} 측 #${bookNum})\n다른 번호를 입력해주세요.`);
+        document.getElementById('book-num').focus();
+        return;
+      }
+      if (!name) {
+        alert('이름을 입력해주세요.');
+        document.getElementById('guest-name').focus();
+        return;
+      }
+      if (!Number.isFinite(amount) || amount < 0) {
+        alert('축의 금액을 올바르게 입력해주세요.');
+        document.getElementById('amount').focus();
+        return;
+      }
+      if (!Number.isInteger(mealTickets) || mealTickets < 0) {
+        alert('식권 수량은 0 이상의 정수로 입력해주세요.');
+        document.getElementById('meal-tickets').focus();
+        return;
+      }
+
+      const guestData = {
+        side,
+        bookNum,
+        name,
+        affiliation,
+        amount,
+        mealTickets,
+        notes
+      };
+
+      if (editId) {
+        const index = guests.findIndex(g => g.id === editId);
+        if (index !== -1) {
+          guests[index] = { id: editId, ...guestData };
+        }
+      } else {
+        guests.push({
+          id: (globalThis.crypto?.randomUUID?.() ?? Date.now().toString()),
+          ...guestData
+        });
+      }
+
+      resetForm();
+      renderData();
+    }
+
+    function editGuest(id) {
+      const g = guests.find(item => item.id === id);
+      if (!g) return;
+
+      document.getElementById('edit-id').value = g.id;
+      document.querySelector(`input[name="side"][value="${g.side}"]`).checked = true;
+      toggleSideStyle(g.side);
+
+      document.getElementById('book-num').value = g.bookNum;
+      document.getElementById('guest-name').value = g.name;
+      document.getElementById('affiliation').value = g.affiliation;
+      document.getElementById('amount').value = g.amount;
+      document.getElementById('meal-tickets').value = g.mealTickets;
+      document.getElementById('notes').value = g.notes || '';
+
+      document.getElementById('form-title').innerHTML = '<i class="fa-solid fa-pen-to-square"></i> 내역 수정';
+      document.getElementById('btn-submit').innerHTML = '<i class="fa-solid fa-check"></i> 수정하기';
+      document.getElementById('btn-cancel-edit').style.display = 'inline-block';
+    }
+
+    function deleteGuest(id) {
+      if (confirm('해당 축의금 내역을 삭제하시겠습니까?')) {
+        guests = guests.filter(g => g.id !== id);
+        renderData();
+      }
+    }
+
+    function resetForm() {
+      document.getElementById('edit-id').value = '';
+      document.getElementById('guest-form').reset();
+      toggleSideStyle('신랑');
+      document.getElementById('form-title').innerHTML = '<i class="fa-solid fa-user-plus"></i> 축의금 내역 입력';
+      document.getElementById('btn-submit').innerHTML = '<i class="fa-solid fa-plus"></i> 등록하기';
+      document.getElementById('btn-cancel-edit').style.display = 'none';
+    }
+
+    function saveToStorage() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(guests));
+    }
+
+    // 정산/지출 내역 렌더링 (금액이 음수면 '-'가 자동으로 표시되고 빨간색으로 강조)
+    function renderSettlements() {
+      const tbody = document.getElementById('settlement-table-body');
+      tbody.innerHTML = '';
+
+      if (settlements.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 2rem; color: #94a3b8;">등록된 정산/지출 내역이 없습니다.</td></tr>`;
+      } else {
+        settlements.forEach(s => {
+          const amtColor = s.amount < 0 ? '#dc2626' : '#0f172a';
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td><strong>${escapeHtml(s.item)}</strong></td>
+            <td style="font-weight:700; color:${amtColor};">${s.amount.toLocaleString()}만원</td>
+            <td style="color:#64748b; font-size:0.8rem;">${escapeHtml(s.notes || '-')}</td>
+            <td style="text-align: center;">
+              <button class="btn btn-secondary btn-sm" onclick="editSettlement('${s.id}')"><i class="fa-solid fa-pen"></i></button>
+              <button class="btn btn-danger btn-sm" onclick="deleteSettlement('${s.id}')"><i class="fa-solid fa-trash"></i></button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+
+      updateStatistics();
+      saveSettlementsToStorage();
+    }
+
+    // 정산/지출 등록 및 수정 (입력은 항상 양수, 저장 시 자동으로 마이너스(지출) 처리)
+    function handleSettlementSubmit(e) {
+      e.preventDefault();
+
+      const editId = document.getElementById('settlement-edit-id').value;
+      const item = document.getElementById('settlement-item').value.trim();
+      const rawAmount = Number(document.getElementById('settlement-amount').value);
+      const notes = document.getElementById('settlement-notes').value.trim();
+
+      if (!item) {
+        alert('항목을 입력해주세요.');
+        document.getElementById('settlement-item').focus();
+        return;
+      }
+      if (!Number.isFinite(rawAmount) || rawAmount <= 0) {
+        alert('지출 금액은 0보다 큰 숫자로 입력해주세요. (예: 30)');
+        document.getElementById('settlement-amount').focus();
+        return;
+      }
+
+      const amount = -Math.abs(rawAmount); // 지출 항목이므로 항상 마이너스로 저장
+      const settlementData = { item, amount, notes };
+
+      if (editId) {
+        const index = settlements.findIndex(s => s.id === editId);
+        if (index !== -1) {
+          settlements[index] = { id: editId, ...settlementData };
+        }
+      } else {
+        settlements.push({
+          id: (globalThis.crypto?.randomUUID?.() ?? Date.now().toString()),
+          ...settlementData
+        });
+      }
+
+      resetSettlementForm();
+      renderSettlements();
+    }
+
+    function editSettlement(id) {
+      const s = settlements.find(item => item.id === id);
+      if (!s) return;
+
+      document.getElementById('settlement-edit-id').value = s.id;
+      document.getElementById('settlement-item').value = s.item;
+      document.getElementById('settlement-amount').value = Math.abs(s.amount);
+      document.getElementById('settlement-notes').value = s.notes || '';
+
+      document.getElementById('settlement-form-title').innerHTML = '<i class="fa-solid fa-pen-to-square"></i> 정산/지출 내역 수정';
+      document.getElementById('btn-settlement-submit').innerHTML = '<i class="fa-solid fa-check"></i> 수정하기';
+      document.getElementById('btn-settlement-cancel-edit').style.display = 'inline-block';
+    }
+
+    function deleteSettlement(id) {
+      if (confirm('해당 정산/지출 내역을 삭제하시겠습니까?')) {
+        settlements = settlements.filter(s => s.id !== id);
+        renderSettlements();
+      }
+    }
+
+    function resetSettlementForm() {
+      document.getElementById('settlement-edit-id').value = '';
+      document.getElementById('settlement-form').reset();
+      document.getElementById('settlement-form-title').innerHTML = '<i class="fa-solid fa-money-bill-transfer"></i> 정산/지출 내역 입력';
+      document.getElementById('btn-settlement-submit').innerHTML = '<i class="fa-solid fa-plus"></i> 등록하기';
+      document.getElementById('btn-settlement-cancel-edit').style.display = 'none';
+    }
+
+    function saveSettlementsToStorage() {
+      localStorage.setItem(SETTLEMENT_STORAGE_KEY, JSON.stringify(settlements));
+    }
+
+    // 엑셀 (CSV) 파일 다운로드 (축의금 + 정산/지출 내역 + 최종 순수익 포함)
+    function exportToCSV() {
+      if (guests.length === 0 && settlements.length === 0) {
+        alert('저장할 데이터가 없습니다.');
+        return;
+      }
+
+      const csvCell = value => `"${String(value ?? '').replace(/"/g, '""')}"`;
+      let csv = '\uFEFF';
+      csv += ['구분', '방명록(봉투)번호', '이름', '소속/관계', '축의금액(만원)', '식권수량', '메모'].map(csvCell).join(',') + '\n';
+
+      let totalAmt = 0;
+      guests.forEach(g => {
+        totalAmt += g.amount;
+        csv += [
+          g.side,
+          g.bookNum,
+          g.name,
+          g.affiliation,
+          g.amount,
+          g.mealTickets,
+          g.notes || ''
+        ].map(csvCell).join(',') + '\n';
+      });
+
+      if (settlements.length > 0) {
+        csv += '\n';
+        csv += ['정산/지출 항목', '금액(만원)', '메모'].map(csvCell).join(',') + '\n';
+
+        let settlementAmt = 0;
+        settlements.forEach(s => {
+          settlementAmt += Number(s.amount || 0);
+          csv += [s.item, s.amount, s.notes || ''].map(csvCell).join(',') + '\n';
+        });
+
+        csv += '\n';
+        csv += ['축의금 총액(만원)', totalAmt].map(csvCell).join(',') + '\n';
+        csv += ['정산/지출 총액(만원)', settlementAmt].map(csvCell).join(',') + '\n';
+        csv += ['최종 순수익(만원)', totalAmt + settlementAmt].map(csvCell).join(',') + '\n';
+      }
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `송은_김태욱_축의금명단_${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function escapeHtml(str) {
+      return String(str ?? '').replace(/[&<>"']/g, function(m) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+      });
+    }
+
+    function openShareModal() { document.getElementById('share-modal').style.display = 'flex'; }
+    function closeShareModal() { document.getElementById('share-modal').style.display = 'none'; }
+
+    // 소스 코드 HTML 파일 저장
+    function downloadCurrentHTML() {
+      const htmlContent = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+      const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = '송은_김태욱_축의금관리시스템.html';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+  </script>
+</body>
+</html>
